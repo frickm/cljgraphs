@@ -81,8 +81,6 @@
 (defn internal-traversal [graph nodes-todo finished] (when-let [current (ipeek nodes-todo)]
                                         (let [next-nodes (remove-set (current graph) finished)
                                               new-todo (ipush-coll (ipop nodes-todo) next-nodes)]
-                                           (println "(current, todo, new-todo)" current nodes-todo new-todo)
-                                           (println "finished:" finished)
                                           (cons current (internal-traversal graph new-todo (conj finished current)))
                                           )
                                         ))
