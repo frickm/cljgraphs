@@ -1,11 +1,7 @@
 (ns graphs.core
   (:gen-class))
 
-(defn -main
-  "I don't do a whole lot ... yet."
-  [& args]
-  (println "Hello, World!"))
-
+(import 'clojure.lang.PersistentQueue)
 
 ;;; note that edge-list are considered to be unordered
 (defn map-map [f m]
@@ -17,12 +13,6 @@
   (map #(vector % node) edges)
   )
 
-(defn transpose [graph] (let [inverted (reduce concat (map invert graph))
-                              grouped (group-by first inverted)]
-                          (map-map #(vec (map last %)) grouped)
-                          )
-  )
-
 (defn multi-merge [cmap [k v]]
   "merges a new key-value pair into the given cmap, which maps to a collection of values"
   (let [old-value (get cmap k)]
@@ -31,12 +21,13 @@
   )
 
 (defn m-transpose [graph]
-  (let [flat-inverted-graph (reduce concat (map invert graph))]
+  (let [invert (fn [[node edges]] (map #(vector % node) edges))
+        flat-inverted-graph (reduce concat (map invert graph))]
     (reduce multi-merge {} (->> graph (map invert) (reduce concat)))
     )
-
   )
 
+(m-transpose {:1 '(:2)})
 
 (require 'clojure.set)
 (import '(clojure.lang PersistentQueue PersistentList IPersistentStack))
@@ -76,7 +67,6 @@
 
 (defn remove-set [coll st] (remove #(get st %) coll))
 
-(import 'clojure.lang.PersistentQueue)
 
 (defn internal-traversal [graph nodes-todo finished] (when-let [current (ipeek nodes-todo)]
                                         (let [next-nodes (remove-set (current graph) finished)
