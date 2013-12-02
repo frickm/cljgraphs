@@ -36,3 +36,19 @@
 (deftest test-transpose-threenodes
   (is (= (m-transpose {:1 '(:2 :3) :2 '(:1)}) {:1 '(:2) :2 '(:1) :3 '(:1)}))
   )
+
+(def graph {:1 '(:2)})
+
+;;; for the dfs and the bfs
+(deftest test-simple-dfs
+  (is (= (dfs {:1 '(:2)}) '(:1 :2))))
+
+(deftest test-dfs2
+  (is (= (dfs {:1 [:2 :3] :2 '(:4)}) '(:1 :2 :4 :3))))
+
+(deftest test-simple-bfs
+  (is (= (bfs {:1 '(:2)}) '(:1 :2))))
+
+(deftest test-bfs2
+  (is (= (bfs {:1 [:2 :3] :2 '(:4)}) '(:1 :2 :3 :4))))
+
