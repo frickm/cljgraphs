@@ -20,14 +20,16 @@
     )
   )
 
+(defn empty-graph [nodes]
+  (zipmap nodes (repeat '()))
+  )
+
 (defn m-transpose [graph]
   (let [invert (fn [[node edges]] (map #(vector % node) edges))
         flat-inverted-graph (reduce concat (map invert graph))]
-    (reduce multi-merge {} (->> graph (map invert) (reduce concat)))
+    (reduce multi-merge (empty-graph (keys graph)) (->> graph (map invert) (reduce concat)))
     )
   )
-
-(m-transpose {:1 '(:2)})
 
 (require 'clojure.set)
 (import '(clojure.lang PersistentQueue PersistentList IPersistentStack))
@@ -86,3 +88,32 @@
                     )
   )
 
+
+(defn delete-node [graph node]
+  (let [target-nodes (into '() (get graph node))
+        ngraph (dissoc graph node)
+        node-eq (fn [n] (= n node))]
+    (reduce #(remove node-eq (get %1 %2)) ngraph target-nodes)
+   ))
+
+(def g {:1 '(:2 :3), :2 '(), :3 '(:2)})
+(delete-node g :3)
+
+
+(defn in-sorted-topo [graph in-degree-map]
+  (if (not-empty graph)
+    (let [sorted (sort #(- (second %1) (second %2)) in-degree-map)
+          next-node (first (first sorted))
+          new-degree-map (reduce #(assoc %1 %2 (dec (get in-degree-map %2))) in-degree-map (get graph next-node))]
+      (cons next-node (in-sorted-topo (dissoc graph next-node) (dissoc new-degree-map next-node)))
+      )
+    '()
+    ))
+
+
+; topological sorting of a graph
+(defn topological-sorting [graph]
+  (let [tr (m-transpose graph)
+        in-degree-map (map-map #(count %) tr)]
+    (in-sorted-topo graph in-degree-map))
+  )

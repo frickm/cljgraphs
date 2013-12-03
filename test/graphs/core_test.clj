@@ -19,12 +19,11 @@
 (def g1 {:1 [:2 :3], :2 [:4], :3 [:4], :4 [], :5 []})
 (def g2 {:1 [:2 :3], :2 [:4], :3 [], :4 [], :5 []})
 
-
 (deftest test-transpose-trivial-graph
   (is (= (m-transpose {}) {})))
 
 (deftest test-transpose-single-node
-  (is (= (m-transpose {:1 '()}) {})))
+  (is (= (m-transpose {:1 '()}) {:1 '()})))
 
 (deftest test-transpose-single-node-self-edge
   (is (= (m-transpose {:1 '(:1)}) {:1 '(:1)})))
@@ -52,3 +51,13 @@
 (deftest test-bfs2
   (is (= (bfs {:1 [:2 :3] :2 '(:4)}) '(:1 :2 :3 :4))))
 
+
+;;; topological sorting
+(deftest test-topo-sorting-empty
+  (is (= (topological-sorting {}) '())))
+
+(deftest test-topo-sorting
+  (is (= (topological-sorting {:1 '(:2), :2 '()}) '(:1 :2))))
+
+(deftest test-topo-sorting
+  (is (= (topological-sorting {:1 '(:2 :3), :2 '(), :3 '()}) '(:1 :3 :2))))
