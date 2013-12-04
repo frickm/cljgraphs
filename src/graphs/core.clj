@@ -1,7 +1,15 @@
 (ns graphs.core
-  (:gen-class))
+  (:gen-class :require [cheshire.core :refer :all]))
 
 (import 'clojure.lang.PersistentQueue)
+
+
+(defstruct directed-graph
+  :nodes       ; The nodes of the graph, a collection
+  :neighbors)  ; A function that, given a node returns a collection
+               ; neighbor nodes.
+
+
 
 ;;; note that edge-list are considered to be unordered
 (defn map-map [f m]
@@ -97,8 +105,6 @@
    ))
 
 (def g {:1 '(:2 :3), :2 '(), :3 '(:2)})
-(delete-node g :3)
-
 
 (defn in-sorted-topo [graph in-degree-map]
   (if (not-empty graph)
@@ -111,9 +117,74 @@
     ))
 
 
+(defn sort-topo [degree-graph]
+  (if (empty? degree-graph) '()
+    (let [sorted (sort (fn [[k1 {left :indegree}] [k2 {right :indegree}]] (- left right)) degree-graph)
+          next-node (first (first sorted))
+          ;;; delete next-node form the graph and decrease the respective in-edges
+          new-degree-map (reduce #(update-in %1 [%2 :indegree] dec) degree-graph (:out (get degree-graph next-node)))]
+      (cons next-node (sort-topo (dissoc new-degree-map next-node)))
+      )
+    ))
+
+
+(defn sort-topo1 [degree-graph result]
+  (if (empty? degree-graph) result
+    (let [sorted (sort (fn [[k1 {left :indegree}] [k2 {right :indegree}]] (- left right)) degree-graph)
+          next-node (first (first sorted))
+          ;;; delete next-node form the graph and decrease the respective in-edges
+          new-degree-map (reduce #(update-in %1 [%2 :indegree] dec) degree-graph (:out (get degree-graph next-node)))]
+      (recur (dissoc new-degree-map next-node) (cons next-node result))
+      )
+    )
+  )
+
+
+;;; node-labelled-graph - each node is associated with a set of neighbors and labels
+(defn node-labelled-graph [graph]
+  (let [in-nodes (map-map (fn [neigh] {:in neigh :indegree (count neigh)}) (m-transpose graph))]
+    (merge-with merge in-nodes (map-map (fn [v] {:out v}) graph))
+    )
+  )
+
 ; topological sorting of a graph
 (defn topological-sorting [graph]
   (let [tr (m-transpose graph)
         in-degree-map (map-map #(count %) tr)]
     (in-sorted-topo graph in-degree-map))
   )
+
+(def t (node-labelled-graph g))
+t
+(sort-topo (node-labelled-graph g))
+(sort-topo1 (node-labelled-graph g) '())
+
+(update-in t [:3 :indegree] dec)
+
+(merge-with concat {:a [10 20] :b [4]} {:b [20]})
+(merge-with merge {:a {:e 10 :f 20} :b {:e 4}} {:b {:t 20}})
+
+(node-labelled-graph g)
+
+
+
+
+;;; read some random jsons
+(require '[clojure.java.io :as io])
+(require '[cheshire.core :refer :all])
+
+(with-open [rdr (io/reader "/home/frick/Desktop/testpatienten/jsons/1157243")]
+  (doseq [line (line-seq rdr)]
+    (println line)
+    )
+  )
+
+(def js (slurp "/home/frick/Desktop/testpatienten/jsons/1157243"))
+
+(def js1 (parse-stream (io/reader "/home/frick/Desktop/testpatienten/jsons/109865")))
+
+(get js1 "patientId")
+(keys js1)
+(keys (get-in js1 ["caringFacts"]))
+(-> js1 (get-in ["caringFacts" "lab"]) count)
+(macroexpand-1 '(-> js1 (get-in ["caringFacts"])))

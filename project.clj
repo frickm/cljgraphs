@@ -3,7 +3,11 @@
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.5.1"]]
+  :dependencies [[org.clojure/clojure "1.5.1"]
+                 [cheshire "5.2.0"]
+                 [lein-light-nrepl "0.0.9"]]
   :main ^:skip-aot graphs.core
   :target-path "target/%s"
-  :profiles {:uberjar {:aot :all}})
+  :profiles {:uberjar {:aot :all}}
+  :repl-options {:nrepl-middleware [lighttable.nrepl.handler/lighttable-ops]}
+  )
