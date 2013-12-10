@@ -5,7 +5,8 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [cheshire "5.2.0"]
-                 [lein-light-nrepl "0.0.9"]]
+                 [lein-light-nrepl "0.0.9"]
+                 [org.clojure/tools.nrepl "0.2.3"]]
   :main ^:skip-aot graphs.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}}
