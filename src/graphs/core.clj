@@ -29,6 +29,11 @@
   (zipmap nodes (repeat '()))
   )
 
+(def g {:1 '(:2 :3), :2 '(:4), :3 '(:2), :4 '(:5) :5 '()})
+
+(defn vertices [graph]
+  (keys graph))
+
 (defn m-transpose [graph]
   (let [invert (fn [[node edges]] (map #(vector % node) edges))
         flat-inverted-graph (reduce concat (map invert graph))]
@@ -78,7 +83,7 @@
                                           )
                                         ))
 
-
+;; note that these algorithm only enumerate from the first node (so they do not traverse the entire graph necessarily)
 (defn dfs [graph] ( let [start-node (first (keys graph))]
                     (internal-traversal graph (list start-node) #{})
                     )
@@ -90,12 +95,58 @@
   )
 
 
+;; dfs with discovery and finish-times (here we traverse the entire graph
+;; nodes-td is a list of maps (at least containing :node key)
+(defn internal-traversal-fn [graph]
+  (let [ndict (partial map (fn [x] {:node x}))]
+    (loop [nodes-todo (into '() (ndict (vertices graph)))
+           finished #{}
+           result []
+           idx '(1 2 3 4 5 6 7 8 9 10 11)]
+      (println nodes-todo finished result)
+      (if-let [current (ipeek nodes-todo)]
+        (let [next-nodes (remove #(finished %) (current graph))
+              new-todo (into '() (map (fn [x] (assoc x :discovered (first idx))) (ipush-coll (ipop nodes-todo) (ndict next-nodes))))
+              ;new-todo (reduce (fn [x y] (assoc x :discovered (first idx))) (ipush-coll (ipop nodes-todo) (ndict next-nodes)))
+              new-result (if (current finished) result (conj result (:node current)))]
+          (recur new-todo (conj finished (:node current)) new-result idx)
+          )
+        result
+        )
+      ))
+  )
+
+(defn add-discovery-time [coll x indices]
+  (update-in coll [x :discovery] (fnil #(min % (first indices)) (first indices))))
+
+(defn add-finish-time [coll x indices]
+  (update-in coll [x :finish] (fnil #(min % (first indices)) (first indices))))
+
+;; a node goes through different stages: undiscovered, discovered and finished
+(defn itr [graph]
+  (loop [nodes-todo (vertices graph)
+         discovered (zipmap (vertices graph) (repeat {}))
+         indices (range)]
+    (println nodes-todo discovered)
+    (if-let [current (first nodes-todo)]
+      (let [next-nodes (remove #(discovered %) (current graph))
+            new-todo (concat next-nodes (rest nodes-todo))]
+        ;(println nodes-todo next-nodes discovered "-->" new-todo)
+        (recur new-todo (add-discovery-time discovered current indices) (rest indices)))
+      discovered
+      )
+    )
+  )
+
+
+(sort-by (comp :discovery second) (itr g))
+
 (defn delete-node [graph node]
   (let [target-nodes (into '() (get graph node))
         ngraph (dissoc graph node)
         node-eq (fn [n] (= n node))]
     (reduce #(remove node-eq (get %1 %2)) ngraph target-nodes)
-   ))
+    ))
 
 (defn in-sorted-topo [graph in-degree-map]
   (if (not-empty graph)
@@ -119,7 +170,7 @@
     ))
 
 
-(defn sort-topo1 [degree-graph result]
+(defn sort-topo-recur [degree-graph result]
   (if (empty? degree-graph) result
     (let [sorted (sort (fn [[k1 {left :indegree}] [k2 {right :indegree}]] (- left right)) degree-graph)
           next-node (first (first sorted))
@@ -145,12 +196,10 @@
     (in-sorted-topo graph in-degree-map))
   )
 
-(def g {:1 '(:2 :3), :2 '(:4), :3 '(:2), :4 '(:5)})
-
 (def t (node-labelled-graph g))
 t
 (sort-topo (node-labelled-graph g))
-(sort-topo1 (node-labelled-graph g) '())
+(sort-topo-recur (node-labelled-graph g) '())
 
 (update-in t [:3 :indegree] dec)
 
@@ -186,22 +235,6 @@ t
 (require '[clojure.java.io :as io])
 (require '[cheshire.core :refer :all])
 
-(with-open [rdr (io/reader "/home/frick/Desktop/testpatienten/jsons/1157243")]
-  (doseq [line (line-seq rdr)]
-    (println line)
-    )
-  )
-
-(def js (slurp "/home/frick/Desktop/testpatienten/jsons/1157243"))
-
-(def js1 (parse-stream (io/reader "/home/frick/Desktop/testpatienten/jsons/109865")))
-
-(get js1 "patientId")
-(keys js1)
-(keys (get-in js1 ["caringFacts"]))
-(-> js1 (get-in ["caringFacts" "lab"]) count)
-(macroexpand-1 '(-> js1 (get-in ["caringFacts"])))
-
 (def sarah (atom {:age 10}))
 (defn hello-watch [key id old new]
   (println key old "==>" new))
@@ -209,4 +242,3 @@ t
 (add-watch sarah :one hello-watch)
 (add-watch sarah :two hello-watch)
 (swap! sarah update-in [:age] inc)
-
